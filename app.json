@@ -1,0 +1,41 @@
+{
+  "name": "Google Maps Scraper API",
+  "description": "REST API for scraping Google Maps search results using Playwright and Chromium",
+  "keywords": [
+    "nodejs",
+    "express",
+    "playwright",
+    "scraper",
+    "google-maps",
+    "api"
+  ],
+  "website": "https://apigmaps.dinerboost.com",
+  "repository": "",
+  "success_url": "/docs",
+  "scripts": {
+    "dokku": {
+      "predeploy": "echo 'Starting deployment...'",
+      "postdeploy": "echo 'Deployment complete. API is ready at /docs for Swagger documentation.'"
+    }
+  },
+  "env": {
+    "NODE_ENV": {
+      "description": "Node environment (production recommended)",
+      "value": "production",
+      "required": true
+    },
+    "PORT": {
+      "description": "Port for the Express server (automatically set by Dokku)",
+      "value": "3000",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [],
+  "stack": "heroku-22"
+}

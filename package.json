@@ -1,0 +1,28 @@
+{
+  "name": "gmaps-scraper",
+  "version": "1.0.0",
+  "description": "Google Maps reviews scraper using Playwright - API REST y modo CLI",
+  "main": "src/api.js",
+  "scripts": {
+    "start": "node src/api.js",
+    "dev": "node src/api.js",
+    "scrape": "node src/scraper.js",
+    "install-browser": "playwright install chromium"
+  },
+  "keywords": [
+    "google-maps",
+    "scraper",
+    "playwright",
+    "reviews",
+    "api",
+    "rest"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0",
+    "playwright": "^1.40.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  }
+}

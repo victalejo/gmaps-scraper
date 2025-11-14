@@ -1,0 +1,50 @@
+# Node modules (will be installed during build)
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Output directory (not needed in container)
+output/
+
+# Development files
+.env
+.env.*
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test files (if any)
+test/
+tests/
+*.test.js
+*.spec.js
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Dokku and deployment files
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Misc
+*.log
+coverage/
+.nyc_output/
