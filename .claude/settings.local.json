@@ -4,7 +4,10 @@
       "Bash(node:*)",
       "Bash(curl:*)",
       "Bash(npm install:*)",
-      "Bash(ssh:*)"
+      "Bash(ssh:*)",
+      "Bash(git remote add:*)",
+      "Bash(GIT_SSH_COMMAND=\"ssh -i ~/.ssh/aurora -o StrictHostKeyChecking=no\" git push:*)",
+      "Bash(nslookup:*)"
     ],
     "deny": [],
     "ask": []

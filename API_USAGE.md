@@ -10,13 +10,13 @@ npm run dev
 node src/api.js
 ```
 
-El servidor se iniciará en `http://localhost:3000` por defecto.
+El servidor está disponible en `https://apigmaps.dinerboost.com`.
 
 ## 📖 Documentación Interactiva (Swagger)
 
 Una vez iniciado el servidor, puedes acceder a la documentación interactiva en:
 
-**http://localhost:3000/docs**
+**<https://apigmaps.dinerboost.com/docs>**
 
 La documentación Swagger te permite:
 - Ver todos los endpoints disponibles con sus parámetros
@@ -29,7 +29,7 @@ La documentación Swagger te permite:
 ### 1. Información de la API
 
 ```bash
-GET http://localhost:3000/
+GET https://apigmaps.dinerboost.com/
 ```
 
 Retorna información general sobre la API y sus endpoints.
@@ -37,7 +37,7 @@ Retorna información general sobre la API y sus endpoints.
 ### 2. Iniciar Scraping
 
 ```bash
-POST http://localhost:3000/api/scrape
+POST https://apigmaps.dinerboost.com/api/scrape
 Content-Type: application/json
 
 {
@@ -64,7 +64,7 @@ Content-Type: application/json
 ### 3. Consultar Estado del Job
 
 ```bash
-GET http://localhost:3000/api/status/:jobId
+GET https://apigmaps.dinerboost.com/api/status/:jobId
 ```
 
 **Respuesta:**
@@ -93,7 +93,7 @@ GET http://localhost:3000/api/status/:jobId
 ### 4. Obtener Resultados
 
 ```bash
-GET http://localhost:3000/api/results/:jobId
+GET https://apigmaps.dinerboost.com/api/results/:jobId
 ```
 
 **Respuesta (si está completado):**
@@ -142,7 +142,7 @@ GET http://localhost:3000/api/results/:jobId
 ### 5. Estadísticas del Sistema
 
 ```bash
-GET http://localhost:3000/api/stats
+GET https://apigmaps.dinerboost.com/api/stats
 ```
 
 **Respuesta:**
@@ -162,7 +162,7 @@ GET http://localhost:3000/api/stats
 ### Iniciar un scraping
 
 ```bash
-curl -X POST http://localhost:3000/api/scrape \
+curl -X POST https://apigmaps.dinerboost.com/api/scrape \
   -H "Content-Type: application/json" \
   -d '{
     "businessUrl": "https://www.google.com/maps/place/Bellas+Artes/@19.4352,-99.1412,17z",
@@ -173,20 +173,20 @@ curl -X POST http://localhost:3000/api/scrape \
 ### Consultar estado
 
 ```bash
-curl http://localhost:3000/api/status/JOBID_AQUI
+curl https://apigmaps.dinerboost.com/api/status/JOBID_AQUI
 ```
 
 ### Obtener resultados
 
 ```bash
-curl http://localhost:3000/api/results/JOBID_AQUI
+curl https://apigmaps.dinerboost.com/api/results/JOBID_AQUI
 ```
 
 ## Ejemplos con JavaScript (fetch)
 
 ```javascript
 // 1. Iniciar scraping
-const response = await fetch('http://localhost:3000/api/scrape', {
+const response = await fetch('https://apigmaps.dinerboost.com/api/scrape', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -202,7 +202,7 @@ console.log('Job iniciado:', jobId);
 
 // 2. Consultar estado cada 5 segundos
 const checkStatus = setInterval(async () => {
-  const statusResponse = await fetch(`http://localhost:3000/api/status/${jobId}`);
+  const statusResponse = await fetch(`https://apigmaps.dinerboost.com/api/status/${jobId}`);
   const status = await statusResponse.json();
 
   console.log(`Progreso: ${status.progress}% - ${status.currentStep}`);
@@ -211,7 +211,7 @@ const checkStatus = setInterval(async () => {
     clearInterval(checkStatus);
 
     // 3. Obtener resultados
-    const resultsResponse = await fetch(`http://localhost:3000/api/results/${jobId}`);
+    const resultsResponse = await fetch(`https://apigmaps.dinerboost.com/api/results/${jobId}`);
     const results = await resultsResponse.json();
 
     console.log('Resultados:', results);
@@ -246,7 +246,7 @@ PORT=8080 npm start
 
 ### Modo Headless
 
-El navegador está configurado en modo headless (sin interfaz gráfica). Esto está configurado en [src/scraper.js:27](src/scraper.js#L27):
+El navegador está configurado en modo headless (sin interfaz gráfica). Esto está configurado en [src/scraper.js:30](src/scraper.js#L30):
 
 ```javascript
 browser = await chromium.launch({
@@ -258,7 +258,7 @@ browser = await chromium.launch({
 
 1. **Jobs en Memoria**: Los jobs se almacenan en memoria y se eliminan después de 24 horas. Para producción, considera usar Redis o una base de datos.
 
-2. **Límite de Jobs**: Máximo 1000 jobs almacenados simultáneamente (configurable en [src/jobManager.js:13](src/jobManager.js#L13)).
+2. **Límite de Jobs**: Máximo 1000 jobs almacenados simultáneamente (configurable en [src/jobManager.js:12](src/jobManager.js#L12)).
 
 3. **Timeouts**: Los jobs pueden tomar varios minutos dependiendo del número de reseñas solicitadas.
 

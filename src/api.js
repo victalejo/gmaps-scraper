@@ -60,6 +60,7 @@ app.get('/', (req, res) => {
       'GET /api/status/:jobId': 'Consultar el estado de un job',
       'GET /api/results/:jobId': 'Obtener los resultados de un job completado',
       'GET /api/stats': 'Estadísticas del sistema',
+      'GET /api/jobs/errors': 'Listar todos los jobs con error',
     },
     documentation: 'http://localhost:3000/docs',
   });
@@ -297,6 +298,44 @@ app.get('/api/stats', (req, res) => {
 });
 
 /**
+ * @swagger
+ * /api/jobs/errors:
+ *   get:
+ *     summary: Obtener jobs con error
+ *     description: Retorna la lista de todos los jobs que terminaron con error, incluyendo detalles del error
+ *     tags: [Jobs]
+ *     responses:
+ *       200:
+ *         description: Lista de jobs con error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorJobsResponse'
+ */
+app.get('/api/jobs/errors', (req, res) => {
+  const errorJobs = jobManager.getErrorJobs();
+
+  // Mapear a formato de respuesta limpio
+  const response = errorJobs.map(job => ({
+    id: job.id,
+    businessUrl: job.businessUrl,
+    maxReviews: job.maxReviews,
+    createdAt: job.createdAt,
+    startedAt: job.startedAt,
+    completedAt: job.completedAt,
+    progress: job.progress,
+    currentStep: job.currentStep,
+    reviewsExtracted: job.reviewsExtracted,
+    error: job.error,
+  }));
+
+  res.json({
+    count: response.length,
+    jobs: response,
+  });
+});
+
+/**
  * Ejecuta el scraping en background
  * @param {string} jobId - ID del job
  * @param {string} businessUrl - URL del negocio
@@ -383,6 +422,7 @@ app.listen(PORT, () => {
   console.log(`  GET    http://localhost:${PORT}/api/status/:jobId`);
   console.log(`  GET    http://localhost:${PORT}/api/results/:jobId`);
   console.log(`  GET    http://localhost:${PORT}/api/stats`);
+  console.log(`  GET    http://localhost:${PORT}/api/jobs/errors`);
   console.log('\nPresiona Ctrl+C para detener el servidor\n');
 });
 

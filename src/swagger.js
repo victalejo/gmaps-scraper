@@ -326,6 +326,83 @@ const options = {
             },
           },
         },
+        ErrorJobsResponse: {
+          type: 'object',
+          properties: {
+            count: {
+              type: 'number',
+              description: 'Número de jobs con error',
+              example: 2,
+            },
+            jobs: {
+              type: 'array',
+              description: 'Lista de jobs con error',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    example: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
+                  },
+                  businessUrl: {
+                    type: 'string',
+                    example: 'https://www.google.com/maps/place/...',
+                  },
+                  maxReviews: {
+                    type: 'number',
+                    example: 100,
+                  },
+                  createdAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-11-14T10:30:00.000Z',
+                  },
+                  startedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    nullable: true,
+                    example: '2025-11-14T10:30:01.000Z',
+                  },
+                  completedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    nullable: true,
+                    example: '2025-11-14T10:32:15.000Z',
+                  },
+                  progress: {
+                    type: 'number',
+                    description: 'Porcentaje de progreso donde falló (0-100)',
+                    example: 45,
+                  },
+                  currentStep: {
+                    type: 'string',
+                    description: 'Último paso ejecutado antes del error',
+                    example: 'Cargando reseñas mediante scroll',
+                  },
+                  reviewsExtracted: {
+                    type: 'number',
+                    description: 'Número de reseñas extraídas antes del error',
+                    example: 32,
+                  },
+                  error: {
+                    type: 'object',
+                    description: 'Detalles del error',
+                    properties: {
+                      message: {
+                        type: 'string',
+                        example: 'TimeoutError: Waiting for selector failed: timeout 30000ms exceeded',
+                      },
+                      stack: {
+                        type: 'string',
+                        example: 'Error: TimeoutError...\n    at ...',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         Error: {
           type: 'object',
           properties: {

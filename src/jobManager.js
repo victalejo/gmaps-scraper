@@ -190,6 +190,15 @@ class JobManager {
       maxJobs: this.maxJobs,
     };
   }
+
+  /**
+   * Obtiene todos los jobs que tienen error
+   * @returns {Array} Lista de jobs con status 'error'
+   */
+  getErrorJobs() {
+    const jobs = Array.from(this.jobs.values());
+    return jobs.filter(j => j.status === 'error');
+  }
 }
 
 // Exportar instancia singleton
