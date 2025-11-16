@@ -7,7 +7,17 @@
       "Bash(ssh:*)",
       "Bash(git remote add:*)",
       "Bash(GIT_SSH_COMMAND=\"ssh -i ~/.ssh/aurora -o StrictHostKeyChecking=no\" git push:*)",
-      "Bash(nslookup:*)"
+      "Bash(nslookup:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git config:*)",
+      "Bash(gh --version:*)",
+      "Bash(gh auth status:*)",
+      "Bash(gh secret set:*)",
+      "Bash(gh secret list:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run rerun:*)",
+      "Bash(gh run watch:*)"
     ],
     "deny": [],
     "ask": []
