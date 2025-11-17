@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const queueManager = require('./queueManager');
 
 /**
  * Sistema de gestión de jobs para scraping asíncrono
@@ -28,17 +29,18 @@ class JobManager {
     // Crear job con estado inicial
     const job = {
       id: jobId,
-      status: 'pending', // pending, running, completed, error
+      status: 'queued', // queued, running, completed, error
       businessUrl,
       maxReviews,
       createdAt: new Date().toISOString(),
       startedAt: null,
       completedAt: null,
       progress: 0, // Porcentaje de progreso (0-100)
-      currentStep: 'Esperando inicio',
+      currentStep: 'En cola de espera',
       results: null,
       error: null,
       reviewsExtracted: 0,
+      queuePosition: null, // Posición en la cola (se actualiza después)
     };
 
     // Limpiar jobs antiguos si hay demasiados
@@ -50,6 +52,53 @@ class JobManager {
 
     console.log(`[JobManager] Job creado: ${jobId}`);
     return jobId;
+  }
+
+  /**
+   * Ejecuta un job usando la cola de procesamiento
+   * @param {string} jobId - ID del job
+   * @param {Function} executionFunction - Función async que ejecuta el scraping
+   */
+  async executeJob(jobId, executionFunction) {
+    const job = this.jobs.get(jobId);
+    if (!job) {
+      throw new Error(`Job ${jobId} no encontrado`);
+    }
+
+    // Actualizar posición en cola antes de encolar
+    const queueInfo = queueManager.getInfo();
+    job.queuePosition = queueInfo.totalJobs + 1;
+
+    console.log(`[JobManager] Job ${jobId} encolado en posición ${job.queuePosition}`);
+
+    // Encolar el job
+    await queueManager.add(async () => {
+      try {
+        // Actualizar estado a running cuando sale de la cola
+        job.status = 'running';
+        job.queuePosition = 0;
+
+        console.log(`[JobManager] Job ${jobId} iniciando ejecución desde la cola`);
+
+        // Ejecutar la función de scraping
+        await executionFunction();
+      } catch (error) {
+        console.error(`[JobManager] Error ejecutando job ${jobId}:`, error);
+        throw error; // Re-lanzar para que la cola lo maneje
+      }
+    });
+  }
+
+  /**
+   * Actualiza la posición en cola de un job
+   * @param {string} jobId - ID del job
+   */
+  updateQueuePosition(jobId) {
+    const job = this.jobs.get(jobId);
+    if (!job || job.status !== 'queued') return;
+
+    const queueInfo = queueManager.getInfo();
+    job.queuePosition = queueInfo.queuedJobs;
   }
 
   /**
@@ -180,14 +229,22 @@ class JobManager {
    */
   getStats() {
     const jobs = Array.from(this.jobs.values());
+    const queueInfo = queueManager.getInfo();
 
     return {
       total: jobs.length,
-      pending: jobs.filter(j => j.status === 'pending').length,
+      queued: jobs.filter(j => j.status === 'queued').length,
       running: jobs.filter(j => j.status === 'running').length,
       completed: jobs.filter(j => j.status === 'completed').length,
       error: jobs.filter(j => j.status === 'error').length,
       maxJobs: this.maxJobs,
+      // Información de la cola
+      queue: {
+        activeJobs: queueInfo.activeJobs,
+        queuedJobs: queueInfo.queuedJobs,
+        maxConcurrency: queueInfo.maxConcurrency,
+        stats: queueInfo.stats,
+      },
     };
   }
 

@@ -17,7 +17,8 @@
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
       "Bash(gh run rerun:*)",
-      "Bash(gh run watch:*)"
+      "Bash(gh run watch:*)",
+      "Bash(timeout 5 node:*)"
     ],
     "deny": [],
     "ask": []

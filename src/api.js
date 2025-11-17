@@ -3,6 +3,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const { scrapeGoogleMapsReviews } = require('./scraper');
 const jobManager = require('./jobManager');
+const queueManager = require('./queueManager');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -61,6 +62,7 @@ app.get('/', (req, res) => {
       'GET /api/results/:jobId': 'Obtener los resultados de un job completado',
       'GET /api/stats': 'Estadísticas del sistema',
       'GET /api/jobs/errors': 'Listar todos los jobs con error',
+      'GET /api/queue/info': 'Información de la cola de procesamiento',
     },
     documentation: 'http://localhost:3000/docs',
   });
@@ -130,14 +132,26 @@ app.post('/api/scrape', async (req, res) => {
     // Crear job
     const jobId = jobManager.createJob(businessUrl, maxReviews);
 
-    // Iniciar scraping en background (sin await)
+    // Iniciar scraping en background usando la cola (sin await)
     executeScraping(jobId, businessUrl, maxReviews);
+
+    // Obtener posición en cola
+    const job = jobManager.getJob(jobId);
+    const queueInfo = queueManager.getInfo();
 
     // Responder inmediatamente con el jobId
     res.status(202).json({
-      message: 'Scraping job iniciado',
+      message: 'Scraping job encolado',
       jobId,
-      status: 'pending',
+      status: 'queued',
+      queuePosition: job.queuePosition,
+      queueInfo: {
+        activeJobs: queueInfo.activeJobs,
+        queuedJobs: queueInfo.queuedJobs,
+        estimatedWaitMessage: queueInfo.activeJobs > 0
+          ? `Hay ${queueInfo.activeJobs} job(s) ejecutándose y ${queueInfo.queuedJobs} esperando`
+          : 'Tu job se ejecutará inmediatamente',
+      },
       statusUrl: `/api/status/${jobId}`,
       resultsUrl: `/api/results/${jobId}`,
     });
@@ -201,6 +215,7 @@ app.get('/api/status/:jobId', (req, res) => {
     progress: job.progress,
     currentStep: job.currentStep,
     reviewsExtracted: job.reviewsExtracted,
+    queuePosition: job.queuePosition || null,
     createdAt: job.createdAt,
     startedAt: job.startedAt,
     completedAt: job.completedAt,
@@ -336,42 +351,98 @@ app.get('/api/jobs/errors', (req, res) => {
 });
 
 /**
- * Ejecuta el scraping en background
+ * @swagger
+ * /api/queue/info:
+ *   get:
+ *     summary: Información de la cola de procesamiento
+ *     description: Obtiene información sobre el estado actual de la cola de jobs
+ *     tags: [Sistema]
+ *     responses:
+ *       200:
+ *         description: Información de la cola
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 activeJobs:
+ *                   type: number
+ *                   description: Jobs actualmente ejecutándose
+ *                 queuedJobs:
+ *                   type: number
+ *                   description: Jobs esperando en cola
+ *                 totalJobs:
+ *                   type: number
+ *                   description: Total de jobs (activos + en cola)
+ *                 maxConcurrency:
+ *                   type: number
+ *                   description: Número máximo de jobs concurrentes permitidos
+ *                 stats:
+ *                   type: object
+ *                   description: Estadísticas históricas de la cola
+ */
+app.get('/api/queue/info', (req, res) => {
+  const queueInfo = queueManager.getInfo();
+
+  res.json({
+    activeJobs: queueInfo.activeJobs,
+    queuedJobs: queueInfo.queuedJobs,
+    totalJobs: queueInfo.totalJobs,
+    maxConcurrency: queueInfo.maxConcurrency,
+    isPaused: queueInfo.isPaused,
+    isIdle: queueInfo.isIdle,
+    stats: queueInfo.stats,
+    message: queueInfo.isIdle
+      ? 'La cola está vacía'
+      : `${queueInfo.activeJobs} job(s) ejecutándose, ${queueInfo.queuedJobs} esperando`,
+  });
+});
+
+/**
+ * Ejecuta el scraping en background usando la cola
  * @param {string} jobId - ID del job
  * @param {string} businessUrl - URL del negocio
  * @param {number} maxReviews - Número máximo de reseñas
  */
 async function executeScraping(jobId, businessUrl, maxReviews) {
-  try {
-    // Marcar job como iniciado
-    jobManager.startJob(jobId);
+  // Encolar el job usando jobManager.executeJob
+  // No usamos await aquí para retornar inmediatamente al cliente
+  jobManager.executeJob(jobId, async () => {
+    try {
+      // Marcar job como iniciado (ya se hace en executeJob, pero lo dejamos por si acaso)
+      jobManager.startJob(jobId);
 
-    // Ejecutar scraping con callbacks de progreso
-    const results = await scrapeGoogleMapsReviewsWithProgress(
-      businessUrl,
-      maxReviews,
-      jobId
-    );
+      // Ejecutar scraping con callbacks de progreso
+      const results = await scrapeGoogleMapsReviewsWithProgress(
+        businessUrl,
+        maxReviews,
+        jobId
+      );
 
-    // Preparar resultados
-    const resultData = {
-      scrapedAt: new Date().toISOString(),
-      totalReviews: results.length,
-      reviews: results,
-      summary: {
-        withPhotos: results.filter(r => r.photos && r.photos.length > 0).length,
-        withOwnerResponse: results.filter(r => r.ownerResponse).length,
-        withAdditionalInfo: results.filter(r => r.additionalInfo).length,
-      },
-    };
+      // Preparar resultados
+      const resultData = {
+        scrapedAt: new Date().toISOString(),
+        totalReviews: results.length,
+        reviews: results,
+        summary: {
+          withPhotos: results.filter(r => r.photos && r.photos.length > 0).length,
+          withOwnerResponse: results.filter(r => r.ownerResponse).length,
+          withAdditionalInfo: results.filter(r => r.additionalInfo).length,
+        },
+      };
 
-    // Marcar job como completado
-    jobManager.completeJob(jobId, resultData);
+      // Marcar job como completado
+      jobManager.completeJob(jobId, resultData);
 
-  } catch (error) {
-    console.error(`Error en scraping job ${jobId}:`, error);
+    } catch (error) {
+      console.error(`Error en scraping job ${jobId}:`, error);
+      jobManager.failJob(jobId, error);
+    }
+  }).catch(error => {
+    // Manejar errores de encolado
+    console.error(`Error al encolar job ${jobId}:`, error);
     jobManager.failJob(jobId, error);
-  }
+  });
 }
 
 /**
@@ -417,13 +488,16 @@ app.listen(PORT, () => {
   console.log('\n=== Google Maps Scraper API ===');
   console.log(`Servidor corriendo en: http://localhost:${PORT}`);
   console.log(`Estado del sistema: http://localhost:${PORT}/api/stats`);
+  console.log(`Cola de procesamiento: http://localhost:${PORT}/api/queue/info`);
   console.log('\nEndpoints disponibles:');
   console.log(`  POST   http://localhost:${PORT}/api/scrape`);
   console.log(`  GET    http://localhost:${PORT}/api/status/:jobId`);
   console.log(`  GET    http://localhost:${PORT}/api/results/:jobId`);
   console.log(`  GET    http://localhost:${PORT}/api/stats`);
+  console.log(`  GET    http://localhost:${PORT}/api/queue/info`);
   console.log(`  GET    http://localhost:${PORT}/api/jobs/errors`);
-  console.log('\nPresiona Ctrl+C para detener el servidor\n');
+  console.log('\nConcurrencia máxima: 1 job a la vez (configurable en queueManager.js)');
+  console.log('Presiona Ctrl+C para detener el servidor\n');
 });
 
 module.exports = app;
