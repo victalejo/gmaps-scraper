@@ -63,6 +63,7 @@ app.get('/', (req, res) => {
       'GET /api/stats': 'Estadísticas del sistema',
       'GET /api/jobs/errors': 'Listar todos los jobs con error',
       'GET /api/queue/info': 'Información de la cola de procesamiento',
+      'DELETE /api/queue/clear': 'Vaciar la cola de procesamiento',
     },
     documentation: 'http://localhost:3000/docs',
   });
@@ -399,6 +400,53 @@ app.get('/api/queue/info', (req, res) => {
 });
 
 /**
+ * @swagger
+ * /api/queue/clear:
+ *   delete:
+ *     summary: Vaciar la cola de procesamiento
+ *     description: Elimina todos los jobs pendientes en la cola. Los jobs que ya están ejecutándose NO se afectan.
+ *     tags: [Sistema]
+ *     responses:
+ *       200:
+ *         description: Cola vaciada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Cola vaciada exitosamente
+ *                 jobsCleared:
+ *                   type: number
+ *                   description: Número de jobs cancelados
+ *                 activeJobsNotAffected:
+ *                   type: number
+ *                   description: Jobs activos que no fueron afectados
+ *                 queueInfo:
+ *                   type: object
+ *                   description: Estado actual de la cola
+ */
+app.delete('/api/queue/clear', (req, res) => {
+  try {
+    const result = jobManager.clearQueue();
+
+    res.json({
+      message: 'Cola vaciada exitosamente',
+      jobsCleared: result.jobsCleared,
+      activeJobsNotAffected: result.activeJobsNotAffected,
+      queueInfo: result.queueInfo,
+    });
+  } catch (error) {
+    console.error('Error al vaciar la cola:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * Ejecuta el scraping en background usando la cola
  * @param {string} jobId - ID del job
  * @param {string} businessUrl - URL del negocio
@@ -495,6 +543,7 @@ app.listen(PORT, () => {
   console.log(`  GET    http://localhost:${PORT}/api/results/:jobId`);
   console.log(`  GET    http://localhost:${PORT}/api/stats`);
   console.log(`  GET    http://localhost:${PORT}/api/queue/info`);
+  console.log(`  DELETE http://localhost:${PORT}/api/queue/clear`);
   console.log(`  GET    http://localhost:${PORT}/api/jobs/errors`);
   console.log('\nConcurrencia máxima: 1 job a la vez (configurable en queueManager.js)');
   console.log('Presiona Ctrl+C para detener el servidor\n');

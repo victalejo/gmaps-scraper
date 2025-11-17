@@ -256,6 +256,52 @@ class JobManager {
     const jobs = Array.from(this.jobs.values());
     return jobs.filter(j => j.status === 'error');
   }
+
+  /**
+   * Vacía la cola de procesamiento y marca jobs en cola como cancelados
+   * NO afecta jobs que ya están ejecutándose
+   * @returns {Object} Información de los jobs eliminados
+   */
+  clearQueue() {
+    const jobs = Array.from(this.jobs.values());
+
+    // Contar jobs en cola antes de limpiar
+    const queuedJobsBefore = jobs.filter(j => j.status === 'queued').length;
+    const activeJobsBefore = jobs.filter(j => j.status === 'running').length;
+
+    // Vaciar la cola de p-queue (elimina jobs pendientes)
+    queueManager.clear();
+
+    // Marcar jobs en estado "queued" como cancelados
+    let jobsCancelled = 0;
+    for (const [jobId, job] of this.jobs.entries()) {
+      if (job.status === 'queued') {
+        job.status = 'error';
+        job.completedAt = new Date().toISOString();
+        job.error = {
+          message: 'Job cancelado - cola vaciada',
+          stack: null,
+        };
+        job.currentStep = 'Cancelado';
+        jobsCancelled++;
+
+        console.log(`[JobManager] Job cancelado: ${jobId}`);
+      }
+    }
+
+    const queueInfo = queueManager.getInfo();
+
+    console.log(`[JobManager] Cola vaciada. Jobs cancelados: ${jobsCancelled}, Jobs activos no afectados: ${activeJobsBefore}`);
+
+    return {
+      jobsCleared: jobsCancelled,
+      activeJobsNotAffected: activeJobsBefore,
+      queueInfo: {
+        activeJobs: queueInfo.activeJobs,
+        queuedJobs: queueInfo.queuedJobs,
+      },
+    };
+  }
 }
 
 // Exportar instancia singleton

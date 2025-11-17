@@ -18,7 +18,10 @@
       "Bash(gh run view:*)",
       "Bash(gh run rerun:*)",
       "Bash(gh run watch:*)",
-      "Bash(timeout 5 node:*)"
+      "Bash(timeout 5 node:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)"
     ],
     "deny": [],
     "ask": []
